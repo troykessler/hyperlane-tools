@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hyperlane Tools
+
+A collection of handy online tools for Hyperlane developers, inspired by [it-tools.tech](https://it-tools.tech/).
+
+## Features
+
+### Address Converter
+Convert between address formats and bytes32 with automatic protocol type detection.
+
+- **Bidirectional conversion**: Address ↔ Bytes32
+- **Auto-detection**: Automatically detects input type and protocol
+- **Multi-protocol support**: Ethereum, Solana, Cosmos, Starknet, Radix, Aleo
+- **Validation**: Real-time validation for each protocol type
+- **Copy to clipboard**: Easy copying of conversion results
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+
+- npm
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **Hyperlane**: @hyperlane-xyz/utils v27.0.0
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+hyperlane-tools/
+├── app/
+│   ├── tools/
+│   │   └── address-converter/    # Address converter tool
+│   │       └── page.tsx
+│   ├── layout.tsx                # Root layout
+│   ├── page.tsx                  # Home page with tools grid
+│   └── globals.css               # Global styles
+├── public/                        # Static assets
+└── package.json
+```
 
-## Deploy on Vercel
+## Adding New Tools
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Create a new directory in `app/tools/[tool-name]/`
+2. Add a `page.tsx` file with your tool component
+3. Add the tool metadata to the `tools` array in `app/page.tsx`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Example:
+
+```typescript
+// app/page.tsx
+const tools = [
+  // ... existing tools
+  {
+    id: "new-tool",
+    title: "New Tool",
+    description: "Description of what the tool does",
+    href: "/tools/new-tool",
+    category: "Category",
+  },
+];
+```
+
+## Known Issues
+
+### Address Converter
+- **Tron support disabled**: Tron address conversion is currently disabled due to a bug in `@hyperlane-xyz/utils` v27.0.0 (Error: "Argument must be a Buffer"). Will be re-enabled when the library is updated.
+
+## Contributing
+
+Feel free to add more tools and features! Some ideas:
+- Message ID calculator
+- Validator signature verifier
+- Domain ID converter
+- Gas price calculator
+- Merkle proof generator
+- Chain configuration viewer
+- And more!
+
+## License
+
+MIT
+
+---
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
