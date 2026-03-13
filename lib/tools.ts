@@ -29,5 +29,12 @@ export const tools: Tool[] = [
     href: '/tools/hash-text',
     category: 'Encoding',
   },
+  {
+    id: 'token-generator',
+    title: 'Token Generator',
+    description: 'Generate random tokens with customizable length and character types',
+    href: '/tools/token-generator',
+    category: 'Utilities',
+  },
   // Add more tools here as they are developed
 ];
