@@ -22,5 +22,12 @@ export const tools: Tool[] = [
     href: '/tools/bech32m-converter',
     category: 'Encoding',
   },
+  {
+    id: 'hash-text',
+    title: 'Hash Text',
+    description: 'Hash text strings using MD5, SHA1, SHA256, SHA224, SHA512, SHA384, SHA3, or RIPEMD160',
+    href: '/tools/hash-text',
+    category: 'Encoding',
+  },
   // Add more tools here as they are developed
 ];
