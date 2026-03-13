@@ -36,5 +36,19 @@ export const tools: Tool[] = [
     href: '/tools/token-generator',
     category: 'Utilities',
   },
+  {
+    id: 'hyperlane-message',
+    title: 'Hyperlane Message',
+    description: 'Encode, decode, and analyze Hyperlane messages and metadata',
+    href: '/tools/hyperlane-message',
+    category: 'Encoding',
+  },
+  {
+    id: 'address-generator',
+    title: 'Address Generator',
+    description: 'Generate random addresses for different blockchain protocols',
+    href: '/tools/address-generator',
+    category: 'Utilities',
+  },
   // Add more tools here as they are developed
 ];
