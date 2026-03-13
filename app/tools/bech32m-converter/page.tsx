@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { bech32 } from 'bech32';
+import { bech32m } from 'bech32';
 
-export default function Bech32Converter() {
+export default function Bech32mConverter() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [hexOutput, setHexOutput] = useState('');
@@ -22,23 +22,23 @@ export default function Bech32Converter() {
     }
 
     try {
-      // Detect bech32 format (HRP can contain lowercase letters, numbers, hyphens, underscores)
+      // Detect bech32m format (HRP can contain lowercase letters, numbers, hyphens, underscores)
       const bech32Pattern = /^[a-z0-9_-]+1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+$/;
 
       if (!bech32Pattern.test(input.trim())) {
-        setError('Invalid bech32 address format');
+        setError('Invalid bech32m address format');
         setOutput('');
         setHexOutput('');
         setSourceHrp('');
         return;
       }
 
-      // Decode the input bech32 address
-      const decoded = bech32.decode(input.trim());
+      // Decode the input bech32m address
+      const decoded = bech32m.decode(input.trim());
       setSourceHrp(decoded.prefix);
 
       // Convert to bytes
-      const bytes = bech32.fromWords(decoded.words);
+      const bytes = bech32m.fromWords(decoded.words);
       const hex = '0x' + Buffer.from(bytes).toString('hex');
       setHexOutput(hex);
 
@@ -57,7 +57,7 @@ export default function Bech32Converter() {
       }
 
       // Re-encode with target HRP
-      const encoded = bech32.encode(targetHrp.trim(), decoded.words);
+      const encoded = bech32m.encode(targetHrp.trim(), decoded.words);
       setOutput(encoded);
       setError('');
     } catch (err) {
@@ -84,10 +84,10 @@ export default function Bech32Converter() {
             ← Back to tools
           </Link>
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
-            Bech32 Converter
+            Bech32m Converter
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-300">
-            Convert bech32 addresses between different chain prefixes
+            Convert bech32m addresses between different chain prefixes
           </p>
         </div>
 
@@ -97,12 +97,12 @@ export default function Bech32Converter() {
             {/* Input Section */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Source Bech32 Address
+                Source Bech32m Address
               </label>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter a bech32 address (e.g., cosmos1zg69v7yszg69v7yszg69v7yszg69v7ys8xdv96)"
+                placeholder="Enter a bech32m address (e.g., bc1p...)"
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={3}
               />
@@ -123,11 +123,11 @@ export default function Bech32Converter() {
                   type="text"
                   value={targetHrp}
                   onChange={(e) => setTargetHrp(e.target.value.toLowerCase())}
-                  placeholder="Enter target prefix (e.g., osmo, cosmos, account_rdx)"
+                  placeholder="Enter target prefix (e.g., bc, tb, account_rdx)"
                   className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  Prefix can contain lowercase letters, numbers, hyphens, and underscores (e.g., cosmos, osmo, account_rdx)
+                  Prefix can contain lowercase letters, numbers, hyphens, and underscores (e.g., bc, tb, account_rdx)
                 </p>
               </div>
             )}
@@ -238,38 +238,36 @@ export default function Bech32Converter() {
           <div className="space-y-4">
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                Convert Cosmos Hub to Osmosis
+                Convert Bitcoin Taproot Address
               </p>
               <div className="space-y-2">
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Input (Cosmos Hub):</p>
-                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                    cosmos1zg69v7yszg69v7yszg69v7yszg69v7ys8xdv96
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Input (Bitcoin mainnet):</p>
+                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded break-all">
+                    bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr
                   </code>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Output (Osmosis):</p>
-                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                    osmo1zg69v7yszg69v7yszg69v7yszg69v7yskj57s9
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Output (Bitcoin testnet):</p>
+                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded break-all">
+                    tb1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxq9r8f8t
                   </code>
                 </div>
               </div>
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                Convert to Custom Prefix
+                About Bech32m
               </p>
               <div className="space-y-2">
-                <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Input (any chain):</p>
-                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                    juno1zg69v7yszg69v7yszg69v7yszg69v7ys7wl4qx
-                  </code>
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  <p>💡 Tip: Enter any chain prefix in the target field to convert addresses.</p>
-                  <p className="mt-1">Common prefixes: cosmos, osmo, juno, evmos, neutron, celestia, dydx, noble, stride</p>
-                  <p className="mt-1">The hex value shows the underlying address bytes that remain constant across all prefixes.</p>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  <p>💡 Bech32m is an improved version of Bech32 used for:</p>
+                  <ul className="mt-2 ml-4 list-disc space-y-1">
+                    <li>Bitcoin Taproot addresses (P2TR)</li>
+                    <li>SegWit v1+ addresses</li>
+                    <li>Other modern cryptocurrency address formats</li>
+                  </ul>
+                  <p className="mt-2">The hex value shows the underlying address bytes that remain constant across all prefixes.</p>
                 </div>
               </div>
             </div>
