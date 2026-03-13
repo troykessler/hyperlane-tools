@@ -3,9 +3,16 @@ import { Tool } from '@/types';
 export const tools: Tool[] = [
   {
     id: 'address-converter',
-    title: 'Address Converter',
-    description: 'Convert between address formats and bytes32 with protocol type',
+    title: 'Address Protocol Converter',
+    description: 'Convert addresses between different blockchain protocols',
     href: '/tools/address-converter',
+    category: 'Encoding',
+  },
+  {
+    id: 'address-bytes32-converter',
+    title: 'Address & Bytes32 Converter',
+    description: 'Convert between address formats and bytes32 representation',
+    href: '/tools/address-bytes32-converter',
     category: 'Encoding',
   },
   {
@@ -55,6 +62,13 @@ export const tools: Tool[] = [
     title: 'Ethereum Unit Converter',
     description: 'Convert between Wei, Gwei, Ether, and other Ethereum denominations',
     href: '/tools/eth-unit-converter',
+    category: 'Utilities',
+  },
+  {
+    id: 'address-equality',
+    title: 'Address Equality Checker',
+    description: 'Compare two blockchain addresses to check if they are equal',
+    href: '/tools/address-equality',
     category: 'Utilities',
   },
   // Add more tools here as they are developed

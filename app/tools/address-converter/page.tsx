@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   addressToBytes32,
-  bytes32ToAddress,
   getAddressProtocolType,
   isValidAddress,
   ProtocolType,
@@ -21,97 +20,85 @@ const protocolOptions = [
   { value: ProtocolType.Radix, label: 'Radix' },
   { value: ProtocolType.Aleo, label: 'Aleo' },
   // Tron temporarily disabled due to bug in @hyperlane-xyz/utils v27.0.0
-  // Error: "Argument must be a Buffer" when converting Tron addresses
   // { value: ProtocolType.Tron, label: 'Tron' },
 ];
 
 export default function AddressConverter() {
   const [input, setInput] = useState('');
-  const [selectedProtocol, setSelectedProtocol] = useState<ProtocolType>(ProtocolType.Ethereum);
-  const [targetProtocol, setTargetProtocol] = useState<ProtocolType>(ProtocolType.Ethereum);
-  const [prefix, setPrefix] = useState('');
-  const [detectedProtocol, setDetectedProtocol] = useState<string>('');
+  const [sourceProtocol, setSourceProtocol] = useState<ProtocolType>(ProtocolType.Ethereum);
+  const [targetProtocol, setTargetProtocol] = useState<ProtocolType>(ProtocolType.Sealevel);
+  const [targetPrefix, setTargetPrefix] = useState('');
+  const [detectedProtocol, setDetectedProtocol] = useState<ProtocolType | undefined>();
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
-  const [inputType, setInputType] = useState<'address' | 'bytes32' | 'unknown'>('unknown');
+  const [bytes32, setBytes32] = useState('');
 
   useEffect(() => {
     if (!input.trim()) {
       setOutput('');
       setError('');
-      setDetectedProtocol('');
-      setInputType('unknown');
+      setDetectedProtocol(undefined);
+      setBytes32('');
       return;
     }
 
     try {
-      // Detect if input is bytes32 (0x followed by 64 hex characters)
-      const bytes32Pattern = /^0x[0-9a-fA-F]{64}$/;
-      const isByte32 = bytes32Pattern.test(input.trim());
+      // Try to detect protocol type
+      const detected = getAddressProtocolType(input.trim());
+      setDetectedProtocol(detected);
 
-      if (isByte32) {
-        setInputType('bytes32');
-        setDetectedProtocol('N/A (bytes32 format)');
+      // Use detected protocol if available, otherwise use selected
+      const actualSourceProtocol = detected || sourceProtocol;
 
-        // Convert hex string to bytes
-        const hexStr = strip0x(input.trim());
-        const fullBytes = new Uint8Array(hexStr.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-
-        // Different protocols use different address lengths:
-        // - EVM-like (Ethereum, Cosmos): 20 bytes (last 20 bytes of bytes32)
-        // - 32-byte addresses (Solana, Starknet, Aleo, Radix): 32 bytes (all bytes)
-        const use32Bytes = [
-          ProtocolType.Sealevel,
-          ProtocolType.Starknet,
-          ProtocolType.Aleo,
-          ProtocolType.Radix,
-        ].includes(targetProtocol);
-
-        const addressBytes = use32Bytes ? fullBytes : fullBytes.slice(-20);
-
-        // Convert to the target protocol address
-        const address = bytesToProtocolAddress(addressBytes, targetProtocol, prefix || undefined);
-        setOutput(address);
-        setError('');
-      } else {
-        setInputType('address');
-
-        // Try to detect protocol type
-        const detectedType = getAddressProtocolType(input.trim());
-        if (detectedType) {
-          setDetectedProtocol(detectedType);
-          setSelectedProtocol(detectedType);
-        } else {
-          setDetectedProtocol('Unknown (using selected protocol)');
-        }
-
-        // Validate address for the selected protocol
-        if (isValidAddress(input.trim(), selectedProtocol)) {
-          try {
-            const bytes32 = addressToBytes32(input.trim(), selectedProtocol);
-            setOutput(bytes32);
-            setError('');
-          } catch (conversionErr) {
-            setOutput('');
-            setError(
-              `Error converting ${selectedProtocol} address: ${
-                conversionErr instanceof Error ? conversionErr.message : 'Unknown error'
-              }`
-            );
-          }
-        } else {
-          setOutput('');
-          setError(`Invalid address for ${selectedProtocol} protocol`);
-        }
+      // Validate address
+      if (!isValidAddress(input.trim(), actualSourceProtocol)) {
+        setOutput('');
+        setError(`Invalid address for ${actualSourceProtocol} protocol`);
+        setBytes32('');
+        return;
       }
+
+      // Convert to bytes32
+      const bytes32Result = addressToBytes32(input.trim(), actualSourceProtocol);
+      setBytes32(bytes32Result);
+
+      // Convert bytes32 to target protocol
+      const hexStr = strip0x(bytes32Result);
+      const fullBytes = new Uint8Array(hexStr.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+
+      // Different protocols use different address lengths:
+      // - EVM-like (Ethereum, Cosmos): 20 bytes (last 20 bytes of bytes32)
+      // - 32-byte addresses (Solana, Starknet, Aleo, Radix): 32 bytes (all bytes)
+      const use32Bytes = [
+        ProtocolType.Sealevel,
+        ProtocolType.Starknet,
+        ProtocolType.Aleo,
+        ProtocolType.Radix,
+      ].includes(targetProtocol);
+
+      const addressBytes = use32Bytes ? fullBytes : fullBytes.slice(-20);
+
+      // Convert to the target protocol address
+      const targetAddress = bytesToProtocolAddress(
+        addressBytes,
+        targetProtocol,
+        targetPrefix || undefined
+      );
+      setOutput(targetAddress);
+      setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Conversion error');
       setOutput('');
+      setBytes32('');
     }
-  }, [input, selectedProtocol, targetProtocol, prefix]);
+  }, [input, sourceProtocol, targetProtocol, targetPrefix]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const getProtocolLabel = (protocol: ProtocolType): string => {
+    return protocolOptions.find(opt => opt.value === protocol)?.label || protocol;
   };
 
   return (
@@ -126,10 +113,10 @@ export default function AddressConverter() {
             ← Back to tools
           </Link>
           <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
-            Address Converter
+            Address Protocol Converter
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-300">
-            Convert between address formats and bytes32 with protocol type detection
+            Convert addresses between different blockchain protocols
           </p>
         </div>
 
@@ -139,96 +126,72 @@ export default function AddressConverter() {
             {/* Input Section */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Input (Address or Bytes32)
+                Source Address
               </label>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter an address (e.g., 0x1234...) or bytes32 (0x0000...)"
+                placeholder="Enter an address (e.g., 0x1234..., So11111..., cosmos1...)"
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={3}
               />
+              {detectedProtocol && (
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  Detected protocol: <span className="font-medium">{getProtocolLabel(detectedProtocol)}</span>
+                </p>
+              )}
             </div>
 
-            {/* Protocol Selection for Address Input */}
-            {inputType === 'address' && (
+            {/* Target Protocol Selection */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Target Protocol
+              </label>
+              <select
+                value={targetProtocol}
+                onChange={(e) => setTargetProtocol(e.target.value as ProtocolType)}
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {protocolOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Target Prefix for Cosmos and Radix */}
+            {(targetProtocol === ProtocolType.Cosmos ||
+              targetProtocol === ProtocolType.CosmosNative ||
+              targetProtocol === ProtocolType.Radix) && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Source Protocol Type
+                  Target Address Prefix{' '}
+                  {targetProtocol === ProtocolType.Radix ? '(optional)' : '(required)'}
                 </label>
-                <select
-                  value={selectedProtocol}
-                  onChange={(e) => setSelectedProtocol(e.target.value as ProtocolType)}
+                <input
+                  type="text"
+                  value={targetPrefix}
+                  onChange={(e) => setTargetPrefix(e.target.value)}
+                  placeholder={
+                    targetProtocol === ProtocolType.Cosmos ||
+                    targetProtocol === ProtocolType.CosmosNative
+                      ? 'e.g., cosmos, osmo, neutron'
+                      : 'e.g., rdx (optional)'
+                  }
                   className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {protocolOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {detectedProtocol && (
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                    Detected: <span className="font-medium">{detectedProtocol}</span>
-                  </p>
-                )}
+                />
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  {targetProtocol === ProtocolType.Cosmos ||
+                  targetProtocol === ProtocolType.CosmosNative
+                    ? 'Enter the chain-specific prefix (e.g., "cosmos" for Cosmos Hub, "osmo" for Osmosis)'
+                    : 'Optionally specify a custom prefix for Radix addresses'}
+                </p>
               </div>
             )}
 
-            {/* Protocol Selection for Bytes32 Input */}
-            {inputType === 'bytes32' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Target Protocol Type
-                  </label>
-                  <select
-                    value={targetProtocol}
-                    onChange={(e) => setTargetProtocol(e.target.value as ProtocolType)}
-                    className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {protocolOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                    Select the protocol format for the output address
-                  </p>
-                </div>
-
-                {/* Prefix input for Cosmos and Radix */}
-                {(targetProtocol === ProtocolType.Cosmos ||
-                  targetProtocol === ProtocolType.CosmosNative ||
-                  targetProtocol === ProtocolType.Radix) && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Address Prefix {targetProtocol === ProtocolType.Radix ? '(optional)' : '(required for Cosmos)'}
-                    </label>
-                    <input
-                      type="text"
-                      value={prefix}
-                      onChange={(e) => setPrefix(e.target.value)}
-                      placeholder={
-                        targetProtocol === ProtocolType.Cosmos || targetProtocol === ProtocolType.CosmosNative
-                          ? 'e.g., cosmos, osmo, neutron'
-                          : 'e.g., rdx (optional)'
-                      }
-                      className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                      {targetProtocol === ProtocolType.Cosmos || targetProtocol === ProtocolType.CosmosNative
-                        ? 'Enter the chain-specific prefix (e.g., "cosmos" for Cosmos Hub)'
-                        : 'Optionally specify a custom prefix for Radix addresses'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Info Display */}
-            {inputType !== 'unknown' && (
+            {/* Conversion Info */}
+            {input && !error && (
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                 <div className="flex items-start gap-2">
                   <svg
@@ -245,20 +208,21 @@ export default function AddressConverter() {
                     />
                   </svg>
                   <div className="text-sm text-blue-800 dark:text-blue-200">
-                    <p className="font-medium mb-1">
-                      Input Type: {inputType === 'address' ? 'Address' : 'Bytes32'}
-                    </p>
+                    <p className="font-medium mb-1">Conversion Process</p>
                     <p>
-                      {inputType === 'address'
-                        ? `Converting ${selectedProtocol} address to bytes32`
-                        : `Converting bytes32 to ${targetProtocol} address${
-                            (targetProtocol === ProtocolType.Cosmos ||
-                              targetProtocol === ProtocolType.CosmosNative ||
-                              targetProtocol === ProtocolType.Radix) &&
-                            prefix
-                              ? ` with prefix "${prefix}"`
-                              : ''
-                          }`}
+                      Converting {getProtocolLabel(detectedProtocol || sourceProtocol)} address →{' '}
+                      {getProtocolLabel(targetProtocol)} address
+                    </p>
+                    {bytes32 && (
+                      <p className="mt-2 font-mono text-xs break-all">
+                        Intermediate bytes32: {bytes32}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs">
+                      <strong>Note:</strong> {[ProtocolType.Sealevel, ProtocolType.Starknet, ProtocolType.Aleo, ProtocolType.Radix].includes(targetProtocol)
+                        ? `${getProtocolLabel(targetProtocol)} uses all 32 bytes`
+                        : `${getProtocolLabel(targetProtocol)} uses the last 20 bytes`
+                      } of the bytes32 representation.
                     </p>
                   </div>
                 </div>
@@ -269,7 +233,7 @@ export default function AddressConverter() {
             {output && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Output ({inputType === 'address' ? 'Bytes32' : `${targetProtocol} Address`})
+                  Converted Address ({getProtocolLabel(targetProtocol)})
                 </label>
                 <div className="relative">
                   <textarea
@@ -312,45 +276,72 @@ export default function AddressConverter() {
           </div>
         </div>
 
+        {/* Info Section */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            How It Works
+          </h2>
+          <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+            <p>
+              This tool converts addresses between different blockchain protocols by converting the source
+              address to its bytes32 representation, then reformatting those bytes for the target protocol.
+            </p>
+            <p>
+              <strong className="text-slate-900 dark:text-slate-100">Note:</strong> This maintains the
+              underlying cryptographic identifier while changing the address format. The resulting address
+              will have the same bytes32 representation as the original.
+            </p>
+            <ul className="ml-4 list-disc space-y-1">
+              <li>20-byte protocols (Ethereum, Cosmos): Use the last 20 bytes of the bytes32</li>
+              <li>32-byte protocols (Solana, Starknet, Aleo, Radix): Use all 32 bytes</li>
+              <li>Cosmos chains require a chain-specific prefix (e.g., "cosmos", "osmo")</li>
+            </ul>
+          </div>
+        </div>
+
         {/* Examples */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-            Examples
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Examples</h2>
           <div className="space-y-4">
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                Address to Bytes32
+                Ethereum → Cosmos
               </p>
               <div className="space-y-2">
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Ethereum:</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Input:</p>
                   <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
                     0x1234567890123456789012345678901234567890
                   </code>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Solana:</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">
+                    Output (with prefix "cosmos"):
+                  </p>
                   <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
-                    So11111111111111111111111111111111111111112
+                    cosmos1zg69v7yszg69v7yszg69v7yszg69v7ys8xdv96
                   </code>
                 </div>
               </div>
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                Bytes32 to Address
+                Solana → Ethereum
               </p>
               <div className="space-y-2">
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Bytes32 (can convert to any protocol):</p>
-                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded break-all">
-                    0x0000000000000000000000001234567890123456789012345678901234567890
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Input:</p>
+                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                    So11111111111111111111111111111111111111112
                   </code>
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  <p>💡 Tip: When converting from bytes32, select your target protocol from the dropdown.</p>
-                  <p className="mt-1">For Cosmos chains, you'll need to specify a prefix (e.g., "cosmos", "osmo", "neutron").</p>
+                <div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">
+                    Output (uses last 20 bytes):
+                  </p>
+                  <code className="text-xs text-slate-600 dark:text-slate-400 font-mono block bg-slate-50 dark:bg-slate-900 p-2 rounded">
+                    0x...
+                  </code>
                 </div>
               </div>
             </div>
