@@ -71,5 +71,12 @@ export const tools: Tool[] = [
     href: '/tools/address-equality',
     category: 'Utilities',
   },
+  {
+    id: 'domain-id-generator',
+    title: 'Domain ID Generator',
+    description: 'Generate Hyperlane domain IDs from chain names',
+    href: '/tools/domain-id-generator',
+    category: 'Utilities',
+  },
   // Add more tools here as they are developed
 ];
