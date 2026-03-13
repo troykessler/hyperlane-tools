@@ -78,5 +78,12 @@ export const tools: Tool[] = [
     href: '/tools/domain-id-generator',
     category: 'Utilities',
   },
+  {
+    id: 'warp-transfer-message',
+    title: 'Warp Transfer Message',
+    description: 'Encode and decode Hyperlane Warp Route token transfer messages',
+    href: '/tools/warp-transfer-message',
+    category: 'Encoding',
+  },
   // Add more tools here as they are developed
 ];
