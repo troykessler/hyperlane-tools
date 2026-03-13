@@ -50,5 +50,12 @@ export const tools: Tool[] = [
     href: '/tools/address-generator',
     category: 'Utilities',
   },
+  {
+    id: 'eth-unit-converter',
+    title: 'Ethereum Unit Converter',
+    description: 'Convert between Wei, Gwei, Ether, and other Ethereum denominations',
+    href: '/tools/eth-unit-converter',
+    category: 'Utilities',
+  },
   // Add more tools here as they are developed
 ];
