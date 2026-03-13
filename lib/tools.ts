@@ -8,5 +8,12 @@ export const tools: Tool[] = [
     href: '/tools/address-converter',
     category: 'Encoding',
   },
+  {
+    id: 'bech32-converter',
+    title: 'Bech32 Converter',
+    description: 'Convert bech32 addresses between different chain prefixes',
+    href: '/tools/bech32-converter',
+    category: 'Encoding',
+  },
   // Add more tools here as they are developed
 ];
