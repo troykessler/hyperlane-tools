@@ -90,6 +90,7 @@ export default function AddressEquality() {
       [ProtocolType.Radix]: 'Radix',
       [ProtocolType.Aleo]: 'Aleo',
       [ProtocolType.Tron]: 'Tron',
+      [ProtocolType.Unknown]: 'Unknown',
     };
     return labels[protocol] || protocol;
   };
