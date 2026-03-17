@@ -85,5 +85,12 @@ export const tools: Tool[] = [
     href: '/tools/eth-unit-converter',
     category: 'Crypto Utils',
   },
+  {
+    id: 'key-mnemonic-generator',
+    title: 'Private Key & Mnemonic Generator',
+    description: 'Generate secure private keys and mnemonic phrases (12 or 24 words) for Ethereum wallets',
+    href: '/tools/key-mnemonic-generator',
+    category: 'Crypto Utils',
+  },
   // Add more tools here as they are developed
 ];
